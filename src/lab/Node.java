@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class Node {
     private final String name;
-    private final int delay;
+    private final double delay;
     private ArrayList<Edge> edges;
     private boolean done;
     private double distanceToStart;
@@ -23,7 +23,7 @@ public class Node {
         return this.name;
     }
 
-    public int getDelay(){
+    public double getDelay(){
         return this.delay;
     }
 
@@ -51,23 +51,34 @@ public class Node {
 
     public void finished(){ this.done = true; }
 
-    public Edge getNext(){
-        Edge shortest = edges.get(0);
-        for(int i = 0; i < this.edges.size(); i++){
-            Edge currentEdge = edges.get(i);
-            if(currentEdge.getDistance() < shortest.getDistance())
-                shortest = currentEdge;
-        }
-        return shortest;
-    }
 
-    public void updateNeighbors(){
-        for(int i = 0; i < edges.size(); i++){
-            Edge currentEdge = edges.get(i);
-            if(this.distanceToStart + currentEdge.getDistance() < currentEdge.getB().distanceToStart) {
-                currentEdge.getB().setDistanceToStart(this.distanceToStart + currentEdge.getDistance());
-                currentEdge.getB().setPreviousInPath(this);
+    public void updateNeighbors(String type){
+        if(type == "Route, Distance" || type == "Distance"){
+            for(int i = 0; i < edges.size(); i++){
+                Edge currentEdge = edges.get(i);
+                if(this.distanceToStart + currentEdge.getDistance() < currentEdge.getB().distanceToStart) {
+                    currentEdge.getB().setDistanceToStart(this.distanceToStart + currentEdge.getDistance());
+                    currentEdge.getB().setPreviousInPath(this);
+                }
             }
         }
+        else if(type == "Time, Distance" || type == "Time"){
+            for(int i = 0; i < edges.size(); i++){
+                Edge currentEdge = edges.get(i);
+                double edgeTime = currentEdge.getDistance() / currentEdge.getMaxSpeed() * 60;
+                if(this.distanceToStart + this.delay + edgeTime < currentEdge.getB().distanceToStart) {
+                    currentEdge.getB().setDistanceToStart(this.distanceToStart + this.delay + edgeTime);
+                    currentEdge.getB().setPreviousInPath(this);
+                }
+            }
+        }
+    }
+
+    public boolean isConnectedTo(Node n){
+        for (int i = 0; i < edges.size(); i ++){
+            if(edges.get(i).getB() == n)
+                return true;
+        }
+        return false;
     }
 }

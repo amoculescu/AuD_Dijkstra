@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.PriorityQueue;
 
 /**
@@ -116,13 +115,104 @@ public class Navigation {
 	 *         returned.
 	 */
 	public ArrayList<String> findShortestRoute(String A, String B) {
+		if (A != B) {
+			Node result = findPath(A, B, "Route, Distance");
+			if (result.getName() != "null" && result.getName() != "ToD")
+				return makeMap(result);
+		}
+		return makeMap(null);
+	}
 
+	/**
+	 * This methods finds the fastest route (in time) between points A and B on
+	 * the map given in the constructor.
+	 *
+	 * If a route is found the return value is an object of type
+	 * ArrayList<String>, where every element is a String representing one line
+	 * in the map. The output map is identical to the input map, apart from that
+	 * all edges on the shortest route are marked "bold". It is also possible to
+	 * output a map where all shortest paths starting in A are marked bold.
+	 *
+	 * The order of the edges as they appear in the output may differ from the
+	 * input.
+	 *
+	 * @param A
+	 *            Source
+	 * @param B
+	 *            Destinaton
+	 * @return returns a map as described above if A or B is not on the map or
+	 *         if there is no path between them the original map is to be
+	 *         returned.
+	 */
+	public ArrayList<String> findFastestRoute(String A, String B) {
+		if(A != B) {
+			Node result = findPath(A, B, "Time, Distance");
+			if (result.getName() != "null" && result.getName() != "ToD")
+				return makeMap(result);
+		}
+		return makeMap(null);
+	}
+
+	/**
+	 * Finds the shortest distance in kilometers between A and B using the
+	 * Dijkstra algorithm.
+	 *
+	 * @param A
+	 *            the start point A
+	 * @param B
+	 *            the destination point B
+	 * @return the shortest distance in kilometers rounded upwards.
+	 *         SOURCE_NOT_FOUND if point A is not on the map
+	 *         DESTINATION_NOT_FOUND if point B is not on the map
+	 *         SOURCE_DESTINATION_NOT_FOUND if point A and point B are not on
+	 *         the map NO_PATH if no path can be found between point A and point
+	 *         B
+	 */
+	public int findShortestDistance(String A, String B) {
+		if(A != B) {
+			Node result = findPath(A, B, "Distance");
+			return evaluateTimeAndDistance(result, B);
+		}
+		return 0;
+	}
+
+	/**
+	 * Find the fastest route between A and B using the dijkstra algorithm.
+	 *
+	 * @param pointA
+	 *            Source
+	 * @param pointB
+	 *            Destination
+	 * @return the fastest time in minutes rounded upwards. SOURCE_NOT_FOUND if
+	 *         point A is not on the map DESTINATION_NOT_FOUND if point B is not
+	 *         on the map SOURCE_DESTINATION_NOT_FOUND if point A and point B
+	 *         are not on the map NO_PATH if no path can be found between point
+	 *         A and point B
+	 */
+	public int findFastestTime(String pointA, String pointB) {
+		if(pointA != pointB) {
+			Node result = findPath(pointA, pointB, "Time");
+			return evaluateTimeAndDistance(result, pointB);
+		}
+		return 0;
+	}
+
+	public int evaluateTimeAndDistance(Node result, String B){
+		if(result.getName() == "null")
+			return (int)Math.ceil(result.getDelay());
+		else if (result.getName() == B)
+			return 0;
+		else
+			return (int)Math.ceil(result.getDelay());
+	}
+
+	public Node findPath(String A, String B, String bla){
 		//initialize nodes for searching, find start and end Nodes if existing
-	    boolean foundStart = false;
-	    boolean foundEnd = false;
-	    boolean foundPath = false;
-	    Node start = null;
-	    Node end = null;
+		boolean foundStart = false;
+		boolean foundEnd = false;
+		boolean foundPath = false;
+		Node start = null;
+		Node end = null;
 		PriorityQueue<Node> queue = new PriorityQueue<Node>(1, (Node n1, Node n2) -> n1.getDistanceToStart() < n2.getDistanceToStart() ? -1 : 1);
 
 		for(int i = 0; i < cities.size(); i++){
@@ -132,9 +222,10 @@ public class Navigation {
 			if (currentNode.getName().equals(A)){
 				start = currentNode;
 				start.setDistanceToStart(0);
+				start.updateNeighbors(bla);
 				foundStart = true;
 			}
-			else if(cities.get(i).getName().equals(B)){
+			if(cities.get(i).getName().equals(B)){
 				end = currentNode;
 				foundEnd = true;
 			}
@@ -142,32 +233,43 @@ public class Navigation {
 		}
 		queue.remove(start);
 
-		//set distance to neighboring nodes of start
-		start.updateNeighbors();
 		//end of initialization
 
-        //start and/or end not found
-        if(!foundStart || !foundEnd){
-		    return makeMap(null);
-        }//actual algorithm
-        else{
-		    Node currentNode = start;
+		//start and/or end not found
+		if(!foundStart && !foundEnd)
+			return new Node("null", -3);
+		if(!foundStart){
+			return new Node("null", -1);
+		}
+		if(!foundEnd){
+			return new Node("null", -2);
+		}//actual algorithm
+		else{
+			Node currentNode;
+			updateQueue(start, queue);
 
-		    while(queue.size() > 0) {
-		    	//queue.peek().setPreviousInPath(currentNode);
-		    	currentNode = queue.poll();
-		    	if(currentNode == end)
-		    		foundPath = true;
-		    	currentNode.updateNeighbors();
-				updateQueue(currentNode, queue);
+			while(queue.size() > 0) {
+				if(queue.peek().getPreviousInPath() == null)
+					queue.poll();
+				else {
+					currentNode = queue.poll();
+					if (currentNode == end)
+						foundPath = true;
+					currentNode.updateNeighbors(bla);
+					updateQueue(currentNode, queue);
+				}
 			}
 			if(foundPath){
-		    	return makeMap(end);
+				if(bla == "Distance")
+					return new Node("ToD", (int)Math.ceil(end.getDistanceToStart()));
+				else if(bla == "Time")
+					return new Node("ToD", (int)Math.ceil(end.getDistanceToStart() - start.getDelay()));
+				return end;
 
 			}else{
-		    	return makeMap(null);
+				return new Node("null", -4);
 			}
-        }
+		}
 	}
 
 	public void updateQueue(Node n, PriorityQueue q){
@@ -212,9 +314,8 @@ public class Navigation {
 			}
 
 			ArrayList<String> map = new ArrayList<>();
-			String currentLine = "Digraph {";
 			Edge currentEdge;
-			map.add(currentLine);
+			map.add("Digraph {");
 			boolean partOfPath = false;
 			for(int i = 0; i < cities.size(); i ++) {
 				currentNode = cities.get(i);
@@ -224,7 +325,7 @@ public class Navigation {
 					partOfPath = false;
 				for (int j = 0; j < currentNode.getEdges().size(); j++) {
 					currentEdge = currentNode.getEdge(j);
-					if (partOfPath && currentEdge.getB().getPreviousInPath() == currentNode)
+					if (partOfPath && path.contains(currentEdge.getB()) && currentEdge.getB().getPreviousInPath() == currentNode)
 						map.add(map.size() - i, currentNode.getName() + " -> " + currentEdge.getB().getName() + " [label=\"" + currentEdge.getDistance() + "," + currentEdge.getMaxSpeed() + "\"][style=bold];");
 					else
 						map.add(map.size() - i, currentNode.getName() + " -> " + currentEdge.getB().getName() + " [label=\"" + currentEdge.getDistance() + "," + currentEdge.getMaxSpeed() + "\"];");
@@ -238,78 +339,4 @@ public class Navigation {
 			return map;
 		}
 	}
-
-	public void initSearch(String A, String B){
-
-	}
-
-	/**
-	 * This methods finds the fastest route (in time) between points A and B on
-	 * the map given in the constructor.
-	 * 
-	 * If a route is found the return value is an object of type
-	 * ArrayList<String>, where every element is a String representing one line
-	 * in the map. The output map is identical to the input map, apart from that
-	 * all edges on the shortest route are marked "bold". It is also possible to
-	 * output a map where all shortest paths starting in A are marked bold.
-	 * 
-	 * The order of the edges as they appear in the output may differ from the
-	 * input.
-	 * 
-	 * @param A
-	 *            Source
-	 * @param B
-	 *            Destinaton
-	 * @return returns a map as described above if A or B is not on the map or
-	 *         if there is no path between them the original map is to be
-	 *         returned.
-	 */
-	public ArrayList<String> findFastestRoute(String A, String B) {
-		//TODO Add you code here
-		
-		return new ArrayList<>(); // dummy, replace
-	}
-
-	/**
-	 * Finds the shortest distance in kilometers between A and B using the
-	 * Dijkstra algorithm.
-	 * 
-	 * @param A
-	 *            the start point A
-	 * @param B
-	 *            the destination point B
-	 * @return the shortest distance in kilometers rounded upwards.
-	 *         SOURCE_NOT_FOUND if point A is not on the map
-	 *         DESTINATION_NOT_FOUND if point B is not on the map
-	 *         SOURCE_DESTINATION_NOT_FOUND if point A and point B are not on
-	 *         the map NO_PATH if no path can be found between point A and point
-	 *         B
-	 */
-	public int findShortestDistance(String A, String B) {
-		//TODO Add you code here
-		int sd = 0; 
-
-		return sd;
-	}
-
-	/**
-	 * Find the fastest route between A and B using the dijkstra algorithm.
-	 * 
-	 * @param pointA
-	 *            Source
-	 * @param pointB
-	 *            Destination
-	 * @return the fastest time in minutes rounded upwards. SOURCE_NOT_FOUND if
-	 *         point A is not on the map DESTINATION_NOT_FOUND if point B is not
-	 *         on the map SOURCE_DESTINATION_NOT_FOUND if point A and point B
-	 *         are not on the map NO_PATH if no path can be found between point
-	 *         A and point B
-	 */
-	public int findFastestTime(String pointA, String pointB) {
-		//TODO Add you code here
-		int ft = 0;
-
-		return ft;
-	}
-
 }
