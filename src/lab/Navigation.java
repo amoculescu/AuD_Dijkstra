@@ -59,14 +59,14 @@ public class Navigation {
             for (int k = 0; k < lines.size(); k++) {
                 currentLine = lines.get(lines.size() -1 - k);
                 //if vertex
-                if (currentLine.matches("[a-z || A-Z]* \\[.*")) {
+                if (currentLine.matches("[a-z|A-Z]* \\[.*")) {
                     String name = currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.indexOf(","));
                     int delay = Integer.parseInt(currentLine.substring(currentLine.indexOf(",") + 1, currentLine.lastIndexOf("\"")));
                     Node newNode = new Node(name, delay);
                     cities.add(newNode);
                 }
                 //if edge
-                else if (currentLine.matches("[a-z || A-Z]* ->.*")) {
+                else if (currentLine.matches("[a-z|A-Z]* ->.*")) {
                     String start = "" + currentLine.substring(0, currentLine.indexOf("-") - 1);
                     String end = "" + currentLine.substring(currentLine.indexOf(">") + 2, currentLine.indexOf("[") - 1);
                     int distance = Integer.parseInt(currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf(",")));
@@ -91,8 +91,6 @@ public class Navigation {
         } catch (IOException e){e.printStackTrace();}
 	}
 
-	public ArrayList<Node> getCities(){ return this.cities; }
-
 	/**
 	 * This methods finds the shortest route (distance) between points A and B
 	 * on the map given in the constructor.
@@ -115,9 +113,9 @@ public class Navigation {
 	 *         returned.
 	 */
 	public ArrayList<String> findShortestRoute(String A, String B) {
-		if (A != B) {
+		if (!A.equals(B)) {
 			Node result = findPath(A, B, "Route, Distance");
-			if (result.getName() != "null" && result.getName() != "ToD")
+			if (!result.getName().equals("null") && !result.getName().equals("ToD"))
 				return makeMap(result);
 		}
 		return makeMap(null);
@@ -145,9 +143,9 @@ public class Navigation {
 	 *         returned.
 	 */
 	public ArrayList<String> findFastestRoute(String A, String B) {
-		if(A != B) {
+		if(!A.equals(B)) {
 			Node result = findPath(A, B, "Time, Distance");
-			if (result.getName() != "null" && result.getName() != "ToD")
+			if (!result.getName().equals("null") && !result.getName().equals("ToD"))
 				return makeMap(result);
 		}
 		return makeMap(null);
@@ -169,9 +167,9 @@ public class Navigation {
 	 *         B
 	 */
 	public int findShortestDistance(String A, String B) {
-		if(A != B) {
+		if(!A.equals(B)) {
 			Node result = findPath(A, B, "Distance");
-			return evaluateTimeAndDistance(result, B);
+			return evaluateTimeAndDistance(result);
 		}
 		return 0;
 	}
@@ -190,31 +188,53 @@ public class Navigation {
 	 *         A and point B
 	 */
 	public int findFastestTime(String pointA, String pointB) {
-		if(pointA != pointB) {
+		if(!pointA.equals(pointB)) {
 			Node result = findPath(pointA, pointB, "Time");
-			return evaluateTimeAndDistance(result, pointB);
+			return evaluateTimeAndDistance(result);
 		}
 		return 0;
 	}
 
-	public int evaluateTimeAndDistance(Node result, String B){
-		if(result.getName() == "null")
-			return (int)Math.ceil(result.getDelay());
-		else if (result.getName() == B)
-			return 0;
-		else
-			return (int)Math.ceil(result.getDelay());
+
+
+	//TODO javadoc
+
+    /**
+     * takes the result Node returned by findPath() and returns the time or distance required from point a to point b.
+     * @param result
+     *      Node returned by findPath(), with the name "null" and the distance or time required from point a to point b as the delay
+     * @return
+     *      time or distance required from point a to point b in km or minutes
+     */
+	private int evaluateTimeAndDistance(Node result){
+	    return (int)Math.ceil(result.getDelay());
 	}
 
-	public Node findPath(String A, String B, String bla){
+	//TODO JAVADOC
+
+    /**
+     * Dijkstra's single source pathfinding algorithm
+     * @param A
+     *      source
+     * @param B
+     *      destination
+     * @param type
+     *      identifier which function called findPath and what result-type is going to be returned
+     * @return
+     *      End node if a path is found, else a new node with name="null" and delay as the error value
+     */
+	private Node findPath(String A, String B, String type){
 		//initialize nodes for searching, find start and end Nodes if existing
+        //creating auxillary variables
 		boolean foundStart = false;
 		boolean foundEnd = false;
 		boolean foundPath = false;
 		Node start = null;
 		Node end = null;
-		PriorityQueue<Node> queue = new PriorityQueue<Node>(1, (Node n1, Node n2) -> n1.getDistanceToStart() < n2.getDistanceToStart() ? -1 : 1);
+		PriorityQueue<Node> queue = new PriorityQueue<>(1, (Node n1, Node n2) -> n1.getDistanceToStart() < n2.getDistanceToStart() ? -1 : 1);
 
+		//set distance to start of every node to +infinity, and previous in path to null, basically resetting
+        //also looking if A and B are included in the map, finally add everything into a priority queue
 		for(int i = 0; i < cities.size(); i++){
 			Node currentNode = cities.get(i);
 			currentNode.setDistanceToStart(Double.POSITIVE_INFINITY);
@@ -222,7 +242,6 @@ public class Navigation {
 			if (currentNode.getName().equals(A)){
 				start = currentNode;
 				start.setDistanceToStart(0);
-
 				foundStart = true;
 			}
 			if(cities.get(i).getName().equals(B)){
@@ -232,52 +251,63 @@ public class Navigation {
 			queue.offer(currentNode);
 		}
 		if (foundStart)
-		    start.updateNeighbors(bla);
+		    start.updateNeighbors(type);
 		queue.remove(start);
-
 		//end of initialization
 
 		//start and/or end not found
 		if(!foundStart && !foundEnd)
-			return new Node("null", -3);
+			return new Node("null", SOURCE_DESTINATION_NOT_FOUND);
 		if(!foundStart){
-			return new Node("null", -1);
+			return new Node("null", SOURCE_NOT_FOUND);
 		}
 		if(!foundEnd){
-			return new Node("null", -2);
+			return new Node("null", DESTINATION_NOT_FOUND);
 		}//actual algorithm
 		else{
 			Node currentNode;
 			updateQueue(start, queue);
 
 			while(queue.size() > 0) {
+                //check if there is an edge connecting the next node in the queue to the path, if not remove the item
 				if(queue.peek().getPreviousInPath() == null)
 					queue.poll();
 				else {
 					currentNode = queue.poll();
 					if (currentNode == end)
 						foundPath = true;
-					currentNode.updateNeighbors(bla);
+					//update distanceToStart of every node connected to ucrrent node and set previousInPath to current Node
+					currentNode.updateNeighbors(type);
 					updateQueue(currentNode, queue);
 				}
 			}
 			if(foundPath){
-				if(bla == "Distance")
+			    //if we are interested in the distance or time required from point a to point b, create a new node
+                // with "ToD" as the name and the distance/time to start as the delay
+				if(type.equals("Distance"))
 					return new Node("ToD", (int)Math.ceil(end.getDistanceToStart()));
-				else if(bla == "Time")
+				else if(type.equals("Time"))
 					return new Node("ToD", (int)Math.ceil(end.getDistanceToStart() - start.getDelay()));
+				//else we return the last node of the path, from which makeMap() will reconstruct the path
 				return end;
-
 			}else{
-				return new Node("null", -4);
+			    //if no path is found return a new node with the name "null" and NO_PATH as delay
+				return new Node("null", NO_PATH);
 			}
 		}
 	}
 
-	public void updateQueue(Node n, PriorityQueue q){
+    /**
+     * removes and reinserts every node connected to ...
+     * @param n
+     *      ... in order to refresh priority
+     * @param q
+     *      queue that is being used
+     */
+	private void updateQueue(Node n, PriorityQueue q){
 		for (int i = 0; i < n.getEdges().size(); i++){
 			if(q.remove(n.getEdge(i).getB()))
-				q.add(n.getEdge(i).getB());
+				q.offer(n.getEdge(i).getB());
 		}
 	}
 
@@ -318,7 +348,7 @@ public class Navigation {
 			ArrayList<String> map = new ArrayList<>();
 			Edge currentEdge;
 			map.add("Digraph {");
-			boolean partOfPath = false;
+			boolean partOfPath;
 			for(int i = 0; i < cities.size(); i ++) {
 				currentNode = cities.get(i);
 				if (path.contains(currentNode))
