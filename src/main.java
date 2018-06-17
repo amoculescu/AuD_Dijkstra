@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 
 public class main {
     public static void main(String[] args) {
-        Navigation n = new Navigation("ServerTests/TestFile2");
+        Navigation n = new Navigation("TestFile5");
         /*ArrayList<Node> testNodes = n.getCities();
 
         System.out.println("Cities: ");
@@ -42,7 +42,7 @@ public class main {
                 System.out.println("tempNode == null");
             counter++;
         }*/
-        ArrayList<String> test = n.findShortestRoute("B", "A");
+        ArrayList<String> test = n.findShortestRoute("F", "C");
         System.out.println("Dijkstra");
         for (int i = 0; i < test.size(); i ++){
             System.out.println(test.get(i));

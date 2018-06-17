@@ -67,8 +67,8 @@ public class Navigation {
                 }
                 //if edge
                 else if (currentLine.matches("[a-z || A-Z]* ->.*")) {
-                    String start = "" + currentLine.charAt(0);
-                    String end = "" + currentLine.charAt(5);
+                    String start = "" + currentLine.substring(0, currentLine.indexOf("-") - 1);
+                    String end = "" + currentLine.substring(currentLine.indexOf(">") + 2, currentLine.indexOf("[") - 1);
                     int distance = Integer.parseInt(currentLine.substring(currentLine.indexOf("\"") + 1, currentLine.lastIndexOf(",")));
                     int maxSpeed = Integer.parseInt(currentLine.substring(currentLine.indexOf(",") + 1, currentLine.lastIndexOf("\"")));
 
@@ -222,7 +222,7 @@ public class Navigation {
 			if (currentNode.getName().equals(A)){
 				start = currentNode;
 				start.setDistanceToStart(0);
-				start.updateNeighbors(bla);
+
 				foundStart = true;
 			}
 			if(cities.get(i).getName().equals(B)){
@@ -231,6 +231,8 @@ public class Navigation {
 			}
 			queue.offer(currentNode);
 		}
+		if (foundStart)
+		    start.updateNeighbors(bla);
 		queue.remove(start);
 
 		//end of initialization
@@ -274,8 +276,8 @@ public class Navigation {
 
 	public void updateQueue(Node n, PriorityQueue q){
 		for (int i = 0; i < n.getEdges().size(); i++){
-			q.remove(n.getEdge(i).getB());
-			q.add(n.getEdge(i).getB());
+			if(q.remove(n.getEdge(i).getB()))
+				q.add(n.getEdge(i).getB());
 		}
 	}
 
