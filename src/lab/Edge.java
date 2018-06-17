@@ -5,8 +5,8 @@ import java.util.ArrayList;
 public class Edge {
     private final Node b;
     private final Node a;
-    private final int distance;
-    private final int maxSpeed;
+    private final double distance;
+    private final double maxSpeed;
 
     public Edge(Node a, Node b, int distance, int maxSpeed){
         this.a = a;
@@ -23,11 +23,11 @@ public class Edge {
         return b;
     }
 
-    public int getDistance(){
+    public double getDistance(){
         return this.distance;
     }
 
-    public int getMaxSpeed(){
+    public double getMaxSpeed(){
         return this.maxSpeed;
     }
 }
